@@ -1,4 +1,5 @@
 import json
+import subprocess
 from dataclasses import dataclass
 from datetime import datetime, timezone
 from pathlib import Path
@@ -119,7 +120,59 @@ def extract_messages(jsonl_path: Path) -> list[Message]:
     return messages
 
 
+def extract_raw_messages(jsonl_path: Path) -> list[dict]:
+    """Return raw JSONL dicts for every user/assistant message line."""
+    raw: list[dict] = []
+    with open(jsonl_path) as f:
+        for line in f:
+            line = line.strip()
+            if not line:
+                continue
+            try:
+                d = json.loads(line)
+            except json.JSONDecodeError:
+                continue
+            if d.get("type") in ("user", "assistant"):
+                raw.append(d)
+    return raw
+
+
 list_sessions = get_all_sessions  # alias used by tui
+
+
+# ── project detection ─────────────────────────────────────────────────────────
+
+def get_project_root() -> Path:
+    """Detect current project root via git, falling back to cwd."""
+    try:
+        result = subprocess.run(
+            ["git", "rev-parse", "--show-toplevel"],
+            capture_output=True,
+            text=True,
+            timeout=5,
+        )
+        if result.returncode == 0 and result.stdout.strip():
+            return Path(result.stdout.strip()).resolve()
+    except Exception:
+        pass
+    return Path.cwd().resolve()
+
+
+def session_matches_project(meta: SessionMeta, project_root: Path) -> bool:
+    """True if the session's launch cwd equals or is nested within project_root."""
+    if not meta.project_path:
+        return False
+    try:
+        cwd = Path(meta.project_path).resolve()
+        root = project_root.resolve()
+        root_str = str(root)
+        cwd_str = str(cwd)
+        return (
+            cwd == root
+            or cwd_str.startswith(root_str + "/")
+        )
+    except Exception:
+        return False
 
 
 def format_for_ai(messages: list[Message], max_chars: int = 40000) -> str:

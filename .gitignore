@@ -1,5 +1,6 @@
 __pycache__/
 *.py[cod]
+*.pyc
 *.egg-info/
 .eggs/
 dist/
@@ -9,5 +10,14 @@ venv/
 env/
 .env
 *.sqlite
+*.sqlite3
 *.db
+sessions.db
+*.jsonl
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
 .DS_Store
+.claude/
+.config/
+.local/
