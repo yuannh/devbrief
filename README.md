@@ -6,7 +6,7 @@ Local Claude Code terminal history browser with optional AI briefs.
 
 Claude Code stores every terminal session as a local JSONL transcript under `~/.claude/projects`, but there is no polished way to browse them. Developers often want to revisit what happened in a previous coding session — what files were touched, what commands were run, how the session ended — without re-reading raw JSON.
 
-A naive solution would auto-summarise every session using an AI model, but that burns tokens silently for every session you open. devbrief solves this properly: raw history browsing is always local and free; AI briefs are optional, manual, and confirmation-gated.
+A naive solution would auto-summarise every session using an AI model, but that burns tokens silently for every session you open. devbrief solves this properly: raw history browsing is always local and zero-token; AI briefs are optional, manual, and confirmation-gated.
 
 ## What devbrief does
 
@@ -37,7 +37,7 @@ A naive solution would auto-summarise every session using an AI model, but that 
 | `devbrief tui` browsing | No | No | Local display only |
 | `devbrief capture --hook` | No | No | Metadata capture, no LLM |
 | `devbrief brief SESSION_ID` | **Yes** | **Yes** | Only after showing estimate and asking confirmation |
-| `devbrief digest SESSION_ID` | **Yes** | **Yes** | Deprecated alias for `brief` |
+| `devbrief digest SESSION_ID` | **Yes** | **Yes** | Deprecated alias for brief; avoid using it. |
 | `devbrief report` | No | No | Disabled compatibility stub |
 
 `--yes` skips the confirmation prompt on `brief` and spends tokens immediately. Use it only when you have already reviewed the estimate.
@@ -56,7 +56,7 @@ claude --print
 Development install:
 
 ```bash
-git clone <repo-url>
+git clone https://github.com/yuannh/devbrief.git
 cd devbrief
 pip install -e .
 devbrief doctor
@@ -113,7 +113,7 @@ Opening or navigating the session browser never calls Claude. AI brief generatio
 
 ## Optional Claude Code Hook
 
-The hook is optional. It captures lightweight session metadata when Claude Code finishes a session and does not call Claude, generate briefs, or spend tokens.
+The hook is optional. It captures lightweight session metadata when Claude Code emits a Stop hook event and does not call Claude, generate briefs, or spend tokens.
 
 Install the safe hook:
 
@@ -190,7 +190,7 @@ Safe state:
 - No devbrief hook installed, **or**
 - Only `devbrief capture --hook`
 
-Unsafe state (remove immediately with `devbrief install-hook` or `devbrief uninstall-hook`):
+Unsafe state — replace with a capture-only hook using `devbrief install-hook`, or remove all devbrief hooks using `devbrief uninstall-hook`:
 
 - `devbrief digest --hook`
 - `devbrief brief --hook`
@@ -200,7 +200,7 @@ Unsafe state (remove immediately with `devbrief install-hook` or `devbrief unins
 ## Development
 
 ```bash
-git clone <repo-url>
+git clone https://github.com/yuannh/devbrief.git
 cd devbrief
 pip install -e .
 python -m compileall src
