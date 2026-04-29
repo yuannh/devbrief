@@ -2,12 +2,6 @@
 
 Local Claude Code terminal history browser with optional AI briefs.
 
-## Problem
-
-Claude Code stores every terminal session as a local JSONL transcript under `~/.claude/projects`, but there is no polished way to browse them. Developers often want to revisit what happened in a previous coding session — what files were touched, what commands were run, how the session ended — without re-reading raw JSON.
-
-A naive solution would auto-summarise every session using an AI model, but that burns tokens silently for every session you open. devbrief solves this properly: raw history browsing is always local and zero-token; AI briefs are optional, manual, and confirmation-gated.
-
 ## What devbrief does
 
 - Lists local Claude Code sessions scoped to the current project.
@@ -17,6 +11,12 @@ A naive solution would auto-summarise every session using an AI model, but that 
 - Provides a keyboard-first split-pane terminal UI for browsing sessions interactively.
 - Optionally generates one AI brief for one selected session after showing a token estimate and asking for confirmation.
 
+## Why it exists
+
+Claude Code stores every terminal session as a local JSONL transcript under `~/.claude/projects`, but there is no polished way to browse them. Developers often want to revisit what happened in a previous coding session — what files were touched, what commands were run, how the session ended — without re-reading raw JSON.
+
+A naive solution would auto-summarise every session using an AI model, but that burns tokens silently for every session you open. devbrief solves this properly: raw history browsing is always local and zero-token; AI briefs are optional, manual, and confirmation-gated.
+
 ## What devbrief is not
 
 - Not installed inside Claude Code.
@@ -24,6 +24,131 @@ A naive solution would auto-summarise every session using an AI model, but that 
 - Not an automatic AI summariser.
 - Not a background agent that spends tokens.
 - Not a tool that uploads your history without explicit action.
+
+## Interface preview
+
+These previews are text mockups with anonymised data. devbrief is designed for local Claude Code history, so the README intentionally avoids real screenshots that could expose project names, local paths, or session content.
+
+### List sessions
+
+`devbrief list` gives you a compact index of local Claude Code sessions for the current project.
+
+```console
+$ devbrief list
+Filtered to: /Users/you/Code/project-alpha
+
+ID        Status       Date        Project        Turns  Title
+────────────────────────────────────────────────────────────────────────────────
+a1b2c3d4  pending/raw  2026-04-29  project-alpha      1  Review deployment readiness...
+e5f6a7b8  pending/raw  2026-04-28  project-alpha      9  Investigate failing integration test...
+c9d0e1f2  briefed      2026-04-28  project-alpha      1  Fix generated summary wording...
+b3c4d5e6  blocked      2026-04-27  project-alpha      5  Refactor authentication flow...
+f7a8b9c0  pending/raw  2026-04-27  project-alpha     12  Prepare release checklist...
+```
+
+### Preview a raw session
+
+`devbrief raw <session-id>` shows a local preview of the original session without calling an LLM.
+
+```
+$ devbrief raw a1b2c3d4
+
+Claude Code Session a1b2c3d4
+Local preview · no LLM
+
+Home project   project-alpha
+CWD            /Users/you/Code/project-alpha
+Started        2026-04-29 10:01 UTC
+Updated        2026-04-29 10:07 UTC
+Status         pending/raw
+Turns          1
+
+Session Outcome
+Status         completed
+Completion     complete
+Confidence     medium
+Reason         The final response included completion language.
+
+1. Human Request
+Review deployment readiness for project-alpha, including:
+1. Backend environment setup
+2. Client release preparation
+3. Backend/client alignment
+4. Final closeout notes with commit, deployment, config, and blockers
+
+Important context:
+- Verify local HEAD
+- Verify remote main
+- Check deployed SHA
+- Confirm clean tracked working tree
+- Report untracked files separately
+- Run relevant tests
+- Do not make destructive changes
+- Do not create or modify production resources
+
+[...use --full for complete request]
+```
+
+### Browse in the TUI
+
+Running `devbrief` opens the interactive two-pane browser.
+
+```
+┌──────────────────────────── devbrief — project-alpha sessions ────────────────────────────┐
+│  Sessions                                           │  Selected session                    │
+├─────────────────────────────────────────────────────┼──────────────────────────────────────┤
+│ ○ pending/raw  project-alpha                        │ project-alpha / a1b2c3d4              │
+│ 04-29 10:01 · 1 turn · 10 files                     │ Status: pending/raw                   │
+│ Review deployment readiness...                      │ Started: 2026-04-29 10:01 UTC         │
+│                                                     │ Updated: 2026-04-29 10:07 UTC         │
+│ ✓ briefed      project-alpha                        │ Turns: 1 · Files: 10                  │
+│ 04-28 13:08 · 1 turn · 4 files                      │ Project path: /Users/you/Code/project │
+│ Fix generated summary wording...                    │                                      │
+│                                                     │ Raw History Preview                   │
+│ ○ pending/raw  api-service                          │ local · free · no LLM                 │
+│ 04-28 11:42 · 8 turns · 12 files                    │                                      │
+│ Investigate failing integration test...             │ Problem                              │
+│                                                     │ The session captured a release        │
+│ ○ blocked      app-core                             │ readiness check and surfaced one      │
+│ 04-27 18:20 · 5 turns · 6 files                     │ unresolved configuration issue.       │
+│ Refactor authentication flow...                     │                                      │
+│                                                     │ Approach                             │
+│                                                     │ Verified local state, checked remote  │
+│                                                     │ branches, reviewed config files, and  │
+│                                                     │ produced a closeout summary.          │
+│                                                     │                                      │
+│                                                     │ Outcome                              │
+│                                                     │ Ready for review, with one blocker    │
+│                                                     │ clearly documented.                   │
+├─────────────────────────────────────────────────────┴──────────────────────────────────────┤
+│ e Estimate   d Brief   v Raw/Brief   ↵ Open   ? Help   r Refresh   a Toggle all   q Quit    │
+└────────────────────────────────────────────────────────────────────────────────────────────┘
+```
+
+### Optional AI brief
+
+Raw previews are local and free. AI briefs are optional and only generated when explicitly requested.
+
+```console
+$ devbrief estimate a1b2c3d4
+Session: a1b2c3d4
+Estimated input: 8,420 tokens
+Estimated output: 700 tokens
+No LLM call made.
+
+$ devbrief brief a1b2c3d4
+Generate AI brief for this session? [y/N]
+```
+
+**What this demonstrates:**
+
+- Browse Claude Code history by project
+- List sessions without opening raw JSONL files
+- Preview raw sessions locally without spending tokens
+- Generate AI briefs only when needed
+- Avoid exposing private session details in README screenshots
+
+All examples above use anonymised sample data. They are not captured from a real Claude Code session.
 
 ## Token Safety Model
 
